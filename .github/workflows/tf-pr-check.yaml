@@ -1,11 +1,11 @@
 name: TF PR check
 on: pull_request
+permissions:
+  pull-requests: write
 
 jobs:
   run-dev:
     uses: ./.github/workflows/tf-plan-wf.yaml
-    permissions:
-      pull-requests: write
     with:
       stage: ./stages/dev.json
 
