@@ -4,6 +4,8 @@ on: pull_request
 jobs:
   run-dev:
     uses: ./.github/workflows/tf-plan-wf.yaml
+    permissions:
+      pull-requests: write
     with:
       stage: ./stages/dev.json
 
