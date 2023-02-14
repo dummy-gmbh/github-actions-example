@@ -34,10 +34,6 @@ jobs:
     needs: [checkchanges]
     if: needs.checkchanges.outputs.diff == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-      pull-requests: write
 
     steps:
       - name: Checkout
