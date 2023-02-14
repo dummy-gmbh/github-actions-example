@@ -1,0 +1,25 @@
+name: TF PR check
+on: pull_request
+
+jobs:
+  run-dev:
+    uses: ./.github/workflows/tf-plan-wf.yaml
+    with:
+      stage: ./stages/dev.json
+
+  run-test:
+    uses: ./.github/workflows/tf-plan-wf.yaml
+    with:
+      stage: ./stages/test.json
+
+  run-staging:
+    uses: ./.github/workflows/tf-plan-wf.yaml
+    needs: [run-dev, run-test]
+    with:
+      stage: ./stages/staging.json
+
+  run-prod:
+    uses: ./.github/workflows/tf-plan-wf.yaml
+    needs: [run-staging]
+    with:
+      stage: ./stages/prod.json
