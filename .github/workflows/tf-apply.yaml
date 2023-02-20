@@ -1,0 +1,39 @@
+name: Deploy infrastructure
+
+# only run a single pipeline on main at any time
+concurrency:
+  group: deploy_infra
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tf-apply-wf.yaml
+    with:
+      environment: dev
+
+  deploy-test:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tf-apply-wf.yaml
+    with:
+      environment: test
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tf-apply-wf.yaml
+    needs: [deploy-dev, deploy-test]
+    with:
+      environment: staging
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/tf-apply-wf.yaml
+    needs: [deploy-staging]
+    with:
+      environment: prod

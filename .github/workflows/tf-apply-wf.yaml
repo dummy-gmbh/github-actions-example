@@ -1,0 +1,82 @@
+name: "Terraform apply workflow"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  terraform-plan:
+    name: "plan ${{ inputs.environment }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      nochanges: ${{steps.checkplan.outputs.nochanges}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          terraform_version: 1.3.2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        timeout-minutes: 20
+        run: terraform plan -no-color -lock=false -var-file=./stages/${{inputs.stage}}.json
+
+      - name: Santitize Plan
+        id: sanitizePlan
+        run: |
+          sanitizedPlan=$(echo "${{ steps.plan.outputs.stdout }}" | grep -v 'Reading...')
+          sanitizedPlan="${sanitizedPlan//'%'/'%25'}"
+          sanitizedPlan="${sanitizedPlan//$'\n'/'%0A'}"
+          sanitizedPlan="${sanitizedPlan//$'\r'/'%0D'}"
+          echo "sanitizedPlan=$sanitizedPlan" >> $GITHUB_OUTPUT
+
+      - name: Check for changes
+        id: checkplan
+        env:
+          PLAN: "${{ steps.sanitizePlan.outputs.sanitizedPlan }}"
+        run: |
+          if echo $PLAN | grep "No changes. Your infrastructure matches the configuration.";
+          then echo "nochanges=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  terraform-apply:
+    name: "apply ${{ inputs.environment }}"
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: needs.terraform-plan.outputs.nochanges != 'true'
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          terraform_version: 1.3.2
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform apply
+        id: apply
+        run: terraform apply -auto-approve -var-file=./stages/${{inputs.stage}}.json
