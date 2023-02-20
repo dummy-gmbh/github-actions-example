@@ -31,7 +31,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         timeout-minutes: 20
-        run: terraform plan -no-color -lock=false -var-file=./stages/${{inputs.stage}}.json
+        run: terraform plan -no-color -lock=false -var-file=./stages/${{inputs.environment}}.json
 
       - name: Santitize Plan
         id: sanitizePlan
@@ -79,4 +79,4 @@ jobs:
 
       - name: Terraform apply
         id: apply
-        run: terraform apply -auto-approve -var-file=./stages/${{inputs.stage}}.json
+        run: terraform apply -auto-approve -var-file=./stages/${{inputs.environment}}.json
